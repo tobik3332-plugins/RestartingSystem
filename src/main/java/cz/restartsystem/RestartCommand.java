@@ -18,37 +18,36 @@ public class RestartCommand implements CommandExecutor {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String[] args) {
         if (args.length == 0) {
-            sender.sendMessage(plugin.color("&cPouziti: /restarting <cas|reload|cancel> [duvod|custom] [vlastni text]"));
+            sender.sendMessage(plugin.color(plugin.getConfig().getString("messages.usage")));
             return true;
         }
 
         if (args[0].equalsIgnoreCase("reload")) {
             if (!sender.hasPermission("restarting.admin")) {
-                sender.sendMessage(plugin.color("&cNemas opravneni k tomuto prikazu!"));
+                sender.sendMessage(plugin.color(plugin.getConfig().getString("messages.no-permission")));
                 return true;
             }
             plugin.reloadConfig();
             plugin.loadAnnouncements();
-            sender.sendMessage(plugin.color("&a[RestartSystem] Konfigurace byla uspesne reloadovana."));
+            sender.sendMessage(plugin.color(plugin.getConfig().getString("messages.reload-success")));
             return true;
         }
 
         if (args[0].equalsIgnoreCase("cancel")) {
             if (!sender.hasPermission("restarting.cancel")) {
-                sender.sendMessage(plugin.color("&cNemas opravneni ke zruseni restartu!"));
+                sender.sendMessage(plugin.color(plugin.getConfig().getString("messages.no-permission")));
                 return true;
             }
             if (!plugin.isRestarting()) {
-                sender.sendMessage(plugin.color("&cZadny restart aktualne neprobiha."));
+                sender.sendMessage(plugin.color(plugin.getConfig().getString("messages.no-restart-running")));
                 return true;
             }
-            plugin.cancelRestart();
-            sender.sendMessage(plugin.color(plugin.getConfig().getString("cancel-message", "&aRestart zrusen.")));
+            plugin.cancelRestart(true);
             return true;
         }
 
         if (!sender.hasPermission("restarting.restart")) {
-            sender.sendMessage(plugin.color("&cNemas opravneni k vyvolani restartu!"));
+            sender.sendMessage(plugin.color(plugin.getConfig().getString("messages.no-permission")));
             return true;
         }
 
@@ -56,12 +55,12 @@ public class RestartCommand implements CommandExecutor {
         try {
             seconds = Integer.parseInt(args[0]);
         } catch (NumberFormatException e) {
-            sender.sendMessage(plugin.color("&cNeplatny cas! Musi byt zadano cislo v sekundach."));
+            sender.sendMessage(plugin.color(plugin.getConfig().getString("messages.invalid-time")));
             return true;
         }
 
         if (args.length < 2) {
-            sender.sendMessage(plugin.color("&cMusis zadat duvod restartu!"));
+            sender.sendMessage(plugin.color(plugin.getConfig().getString("messages.no-reason-provided")));
             return true;
         }
 
@@ -69,11 +68,11 @@ public class RestartCommand implements CommandExecutor {
 
         if (reasonKey.equalsIgnoreCase("custom")) {
             if (!sender.hasPermission("restarting.restart.custom")) {
-                sender.sendMessage(plugin.color("&cNemas opravneni pro vlastni duvod restartu!"));
+                sender.sendMessage(plugin.color(plugin.getConfig().getString("messages.no-permission")));
                 return true;
             }
             if (args.length < 3) {
-                sender.sendMessage(plugin.color("&cMusis napsat text vlastniho duvodu!"));
+                sender.sendMessage(plugin.color(plugin.getConfig().getString("messages.no-custom-text-provided")));
                 return true;
             }
             
@@ -88,7 +87,7 @@ public class RestartCommand implements CommandExecutor {
         }
 
         if (!plugin.getConfig().contains("prompts." + reasonKey)) {
-            sender.sendMessage(plugin.color("&cTento duvod v konfiguraci neexistuje!"));
+            sender.sendMessage(plugin.color(plugin.getConfig().getString("messages.unknown-reason")));
             return true;
         }
 

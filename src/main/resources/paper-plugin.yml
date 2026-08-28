@@ -1,0 +1,12 @@
+name: RestartSystem
+version: '1.0.0'
+main: cz.restartsystem.RestartSystem
+api-version: '1.20'
+author: TwujNick
+description: Pokrocily system pro planovani restartu serveru.
+
+commands:
+  restarting:
+    description: Hlavni prikaz pro spravu restartu.
+    permission: restarting.restart
+    usage: /restarting <cas|reload|cancel> [duvod|custom] [vlastni text]

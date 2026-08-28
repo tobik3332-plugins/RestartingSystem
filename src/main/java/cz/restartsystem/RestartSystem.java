@@ -22,15 +22,17 @@ public final class RestartSystem extends JavaPlugin {
         saveDefaultConfig();
         loadAnnouncements();
 
-        Objects.requireNonNull(getCommand("restarting")).setExecutor(new RestartCommand(this));
-        Objects.requireNonNull(getCommand("restarting")).setTabCompleter(new RestartTabCompleter(this));
-        
+        if (getCommand("restarting") != null) {
+            getCommand("restarting").setExecutor(new RestartCommand(this));
+            getCommand("restarting").setTabCompleter(new RestartTabCompleter(this));
+        }
+
         getLogger().info("RestartSystem byl uspesne aktivovan!");
     }
 
     @Override
     public void onDisable() {
-        cancelRestart();
+        cancelRestart(false);
     }
 
     public void loadAnnouncements() {
@@ -52,7 +54,7 @@ public final class RestartSystem extends JavaPlugin {
     }
 
     public void startRestart(int seconds, List<String> broadcastTemplate, String customReason) {
-        cancelRestart();
+        cancelRestart(false);
         this.secondsRemaining = seconds;
 
         sendFormattedBroadcast(broadcastTemplate, secondsRemaining, customReason);
@@ -71,16 +73,23 @@ public final class RestartSystem extends JavaPlugin {
         }, 20L, 20L);
     }
 
-    public void cancelRestart() {
+    public void cancelRestart(boolean broadcast) {
         if (mainTimerTask != null) {
             mainTimerTask.cancel();
             mainTimerTask = null;
             secondsRemaining = 0;
+
+            if (broadcast) {
+                List<String> cancelPrompt = getConfig().getStringList("prompt-cancel.prompt");
+                for (String line : cancelPrompt) {
+                    Bukkit.broadcastMessage(color(line));
+                }
+            }
         }
     }
 
     private void executeServerRestart() {
-        cancelRestart();
+        cancelRestart(false);
         String kickMsg = color(getConfig().getString("kick-message", "&cServer se restartuje!"));
         
         for (Player player : Bukkit.getOnlinePlayers()) {

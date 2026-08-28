@@ -1,7 +1,7 @@
 # ========================================================
 #             RestartSystem Configuration
 # ========================================================
-# Přehled oprávnění (Permissions):
+# Permise:
 # # restarting.admin          - Oprávnění k příkazu /restarting reload
 # # restarting.restart        - Oprávnění k zahájení restartu s přednastaveným důvodem
 # # restarting.restart.custom - Oprávnění k zahájení restartu s vlastním důvodem (custom)
@@ -34,27 +34,46 @@ announce:
   - "10, Server se restartuje za 10 sekund!"
   - "5, Server se restartuje za 5 sekund!"
 
-cancel-message: "&a[RestartSystem] Odpočet restartu byl úspěšně zrušen."
+# Zprávy pro hráče
+messages:
+  reload-success: "&8[&cRestartSystem&8]&7 Konfigurace byla uspesne reloadovana."
+  no-permission: "&cNa toto nemáš právo."
+  usage: "&7Pouziti: &c/restarting <cas|reload|cancel> [duvod|custom] [vlastni text]"
+  invalid-time: "&cNeplatny cas! Musi byt zadano cislo v sekundach."
+  no-reason-provided: "&cMusis zadat duvod restartu!"
+  no-custom-text-provided: "&cMusis napsat text vlastniho duvodu!"
+  unknown-reason: "&cTento duvod v konfiguraci neexistuje!"
+  no-restart-running: "&cZadny restart aktualne neprobiha."
+
 kick-message: "&cServer se prave restartuje!\nPrijdte se podivat za chvili."
+
+# Víceřádková zpráva při zrušení restartu (odesílá se všem)
+prompt-cancel:
+  prompt:
+    - "&8--------------------------------------------------"
+    - " &cRestartovani serveru bylo zruseno"
+    - "&r"
+    - " &cOmlouvame se"
+    - "&8--------------------------------------------------"
 
 prompts:
   plugins:
-    - "&8--------------------------------------------------------"
+    - "&8-----------------------------------------------------"
     - " &cRestartovani serveru za {time}"
     - "&r"
     - " &cDuvod: Restartovani kvuli pluginum"
-    - "&8--------------------------------------------------------"
+    - "&8-----------------------------------------------------"
   udrzba:
-    - "&8--------------------------------------------------------"
+    - "&8-----------------------------------------------------"
     - " &cRestartovani serveru za {time}"
     - "&r"
     - " &cDuvod: Planovana udrzba serveru"
-    - "&8--------------------------------------------------------"
+    - "&8-----------------------------------------------------"
 
 custom-prompts:
   prompt:
-    - "&8--------------------------------------------------------"
+    - "&8-----------------------------------------------------"
     - " &cRestartovani serveru za {time}"
     - "&r"
     - " &cDuvod: {reason}"
-    - "&8--------------------------------------------------------"
+    - "&8-----------------------------------------------------"

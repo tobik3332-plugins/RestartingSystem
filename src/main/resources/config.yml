@@ -50,30 +50,39 @@ kick-message: "&cServer se prave restartuje!\nPrijdte se podivat za chvili."
 # Víceřádková zpráva při zrušení restartu (odesílá se všem)
 prompt-cancel:
   prompt:
-    - "&8--------------------------------------------------"
-    - " &cRestartovani serveru bylo zruseno"
+    - "&8-----------------------------------------------------"
+    - '                                &c&lʀᴇѕᴛᴀʀᴛɪɴɢ'
     - "&r"
-    - " &cOmlouvame se"
-    - "&8--------------------------------------------------"
+    - "                     &cRestart serveru byl přerušen. "
+    - "&8-----------------------------------------------------"
 
 prompts:
+  obecne:
+    - '&8-----------------------------------------------------'
+    - '                            &c&lʀᴇѕᴛᴀʀᴛɪɴɢ &8| &7{time}'
+    - '&r'
+    - '    &cServer se restartuje, po chvíli se můžete opět připojit.'
+    - '&8-----------------------------------------------------'
   plugins:
-    - "&8-----------------------------------------------------"
-    - " &cRestartovani serveru za {time}"
-    - "&r"
-    - " &cDuvod: Restartovani kvuli pluginum"
-    - "&8-----------------------------------------------------"
+    - '&8-----------------------------------------------------'
+    - '                            &c&lʀᴇѕᴛᴀʀᴛɪɴɢ &8| &7{time}'
+    - '&r'
+    - '        &cServer se restartuje, z důvodu údržby pluginu,'
+    - '                &cpo chvíli se můžete opět připojit.'
+    - '&8-----------------------------------------------------'
   udrzba:
-    - "&8-----------------------------------------------------"
-    - " &cRestartovani serveru za {time}"
-    - "&r"
-    - " &cDuvod: Planovana udrzba serveru"
-    - "&8-----------------------------------------------------"
+    - '&8-----------------------------------------------------'
+    - '                            &c&lʀᴇѕᴛᴀʀᴛɪɴɢ &8| &7{time}'
+    - '&r'
+    - '        &cServer se restartuje, z důvodu údržby serveru,'
+    - '                &cpo chvíli se můžete opět připojit.'
+    - '&8-----------------------------------------------------'
 
 custom-prompts:
   prompt:
-    - "&8-----------------------------------------------------"
-    - " &cRestartovani serveru za {time}"
-    - "&r"
-    - " &cDuvod: {reason}"
-    - "&8-----------------------------------------------------"
+    - '&8-----------------------------------------------------'
+    - '                            &c&lʀᴇѕᴛᴀʀᴛɪɴɢ &8| &7{time}'
+    - '&r'
+    - '    &cServer se restartuje, po chvíli se můžete opět připojit.'
+    - '                &cDůvod: {reason}'
+    - '&8-----------------------------------------------------'

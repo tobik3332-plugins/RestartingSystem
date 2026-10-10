@@ -14,6 +14,7 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 
 public final class RestartSystem extends JavaPlugin {
@@ -45,7 +46,7 @@ public final class RestartSystem extends JavaPlugin {
         reloadConfig();
     }
 
-    public void startRestart(int time, List<Integer> customWarnings, String customCommand) {
+    public void startRestart(int time, List<String> customWarnings, String customCommand) {
         if (isRestarting) {
             return;
         }
@@ -62,9 +63,16 @@ public final class RestartSystem extends JavaPlugin {
                     return;
                 }
 
-                List<Integer> warnings = (customWarnings != null && !customWarnings.isEmpty()) 
-                        ? customWarnings 
-                        : getConfig().getIntegerList("time-warnings");
+                List<Integer> warnings = new ArrayList<>();
+                if (customWarnings != null && !customWarnings.isEmpty()) {
+                    for (String s : customWarnings) {
+                        try {
+                            warnings.add(Integer.parseInt(s));
+                        } catch (NumberFormatException ignored) {}
+                    }
+                } else {
+                    warnings = getConfig().getIntegerList("time-warnings");
+                }
 
                 if (warnings.contains(timeLeft)) {
                     String msgKey = getWarningMessageKey(timeLeft);

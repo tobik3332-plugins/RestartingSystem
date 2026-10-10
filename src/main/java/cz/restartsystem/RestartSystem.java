@@ -20,7 +20,7 @@ public final class RestartSystem extends JavaPlugin {
 
     private int timeLeft;
     private BukkitTask timerTask;
-    private boolean isRunning = false;
+    private boolean isRestarting = false;
 
     @Override
     public void onEnable() {
@@ -46,12 +46,12 @@ public final class RestartSystem extends JavaPlugin {
     }
 
     public void startRestart(int time, List<Integer> customWarnings, String customCommand) {
-        if (isRunning) {
+        if (isRestarting) {
             return;
         }
 
         this.timeLeft = time > 0 ? time : getConfig().getInt("restart-time", 300);
-        this.isRunning = true;
+        this.isRestarting = true;
 
         timerTask = new BukkitRunnable() {
             @Override
@@ -81,7 +81,7 @@ public final class RestartSystem extends JavaPlugin {
     }
 
     public void cancelRestart(boolean notify) {
-        if (!isRunning) {
+        if (!isRestarting) {
             return;
         }
 
@@ -90,7 +90,7 @@ public final class RestartSystem extends JavaPlugin {
             timerTask = null;
         }
 
-        isRunning = false;
+        isRestarting = false;
 
         if (notify) {
             Bukkit.broadcastMessage(color(getConfig().getString("messages.restart-cancelled", "")));
@@ -98,7 +98,7 @@ public final class RestartSystem extends JavaPlugin {
     }
 
     private void executeRestart(String customCommand) {
-        isRunning = false;
+        isRestarting = false;
         Bukkit.broadcastMessage(color(getConfig().getString("messages.restart-now", "")));
 
         // Odeslání Discord webhooku při spuštění restartu
@@ -203,8 +203,8 @@ public final class RestartSystem extends JavaPlugin {
         return ChatColor.translateAlternateColorCodes('&', message.replace("%prefix%", prefix));
     }
 
-    public boolean isRunning() {
-        return isRunning;
+    public boolean isRestarting() {
+        return isRestarting;
     }
 
     public int getTimeLeft() {

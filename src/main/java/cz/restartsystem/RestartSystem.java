@@ -16,116 +16,98 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-public class RestartSystem extends JavaPlugin {
+public final class RestartSystem extends JavaPlugin {
 
     private int timeLeft;
     private BukkitTask timerTask;
-    private boolean isRestarting = false;
+    private boolean isRunning = false;
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
-        
+
         PluginCommand command = getCommand("restartsytem");
         if (command != null) {
-            RestartCommand cmdHandler = new RestartCommand(this);
-            command.setExecutor(cmdHandler);
-            command.setTabCompleter(new RestartTabCompleter());
+            command.setExecutor(new RestartCommand(this));
+            command.setTabCompleter(new RestartTabCompleter(this));
         }
 
-        startRestartTimer();
-        getLogger().info("RestartingSystem by tobik3332 enabled!");
+        getLogger().info("RestartingSystem has been enabled.");
     }
 
     @Override
     public void onDisable() {
-        cancelRestartTimer();
-        getLogger().info("RestartingSystem disabled!");
+        cancelRestart(false);
+        getLogger().info("RestartingSystem has been disabled.");
     }
 
-    public void startRestartTimer() {
-        cancelRestartTimer();
-        
-        timeLeft = getConfig().getInt("restart-time", 300);
-        isRestarting = true;
+    public void loadAnnouncements() {
+        reloadConfig();
+    }
+
+    public void startRestart(int time, List<Integer> customWarnings, String customCommand) {
+        if (isRunning) {
+            return;
+        }
+
+        this.timeLeft = time > 0 ? time : getConfig().getInt("restart-time", 300);
+        this.isRunning = true;
 
         timerTask = new BukkitRunnable() {
             @Override
             public void run() {
                 if (timeLeft <= 0) {
-                    executeRestart();
+                    executeRestart(customCommand);
                     cancel();
                     return;
                 }
 
-                checkAndSendWarning(timeLeft);
+                List<Integer> warnings = (customWarnings != null && !customWarnings.isEmpty()) 
+                        ? customWarnings 
+                        : getConfig().getIntegerList("time-warnings");
+
+                if (warnings.contains(timeLeft)) {
+                    String msgKey = getWarningMessageKey(timeLeft);
+                    String formattedTime = formatTime(timeLeft);
+                    String msg = color(getConfig().getString("messages." + msgKey, "")).replace("%time%", formattedTime);
+                    
+                    Bukkit.broadcastMessage(msg);
+                    playWarningSound();
+                }
+
                 timeLeft--;
             }
         }.runTaskTimer(this, 0L, 20L);
     }
 
-    public void cancelRestartTimer() {
-        if (timerTask != null && !timerTask.isCancelled()) {
+    public void cancelRestart(boolean notify) {
+        if (!isRunning) {
+            return;
+        }
+
+        if (timerTask != null) {
             timerTask.cancel();
+            timerTask = null;
         }
-        isRestarting = false;
-    }
 
-    private void checkAndSendWarning(int seconds) {
-        List<Integer> warnings = getConfig().getIntegerList("time-warnings");
-        if (warnings.contains(seconds)) {
-            String messageKey = getWarningMessageKey(seconds);
-            String formattedTime = formatTime(seconds);
-            String msg = getMsg(messageKey).replace("%time%", formattedTime);
-            
-            Bukkit.broadcastMessage(msg);
-            playSound();
+        isRunning = false;
+
+        if (notify) {
+            Bukkit.broadcastMessage(color(getConfig().getString("messages.restart-cancelled", "")));
         }
     }
 
-    private String getWarningMessageKey(int seconds) {
-        if (seconds >= 60) {
-            int minutes = seconds / 60;
-            return (minutes == 1) ? "messages.time-warning-minute" : "messages.time-warning-minutes";
-        } else {
-            return (seconds == 1) ? "messages.time-warning-second" : "messages.time-warning-seconds";
-        }
-    }
+    private void executeRestart(String customCommand) {
+        isRunning = false;
+        Bukkit.broadcastMessage(color(getConfig().getString("messages.restart-now", "")));
 
-    private String formatTime(int totalSeconds) {
-        if (totalSeconds >= 60) {
-            int minutes = totalSeconds / 60;
-            return minutes + getConfig().getString("time-format.minutes", "m");
-        } else {
-            return totalSeconds + getConfig().getString("time-format.seconds", "s");
-        }
-    }
-
-    private void playSound() {
-        if (!getConfig().getBoolean("sound.enabled", true)) return;
-
-        String soundName = getConfig().getString("sound.sound-name", "ENTITY_EXPERIENCE_ORB_PICKUP");
-        float volume = (float) getConfig().getDouble("sound.volume", 1.0);
-        float pitch = (float) getConfig().getDouble("sound.pitch", 1.0);
-
-        try {
-            Sound sound = Sound.valueOf(soundName);
-            for (Player player : Bukkit.getOnlinePlayers()) {
-                player.playSound(player.getLocation(), sound, volume, pitch);
-            }
-        } catch (IllegalArgumentException e) {
-            getLogger().warning("Invalid sound name in config: " + soundName);
-        }
-    }
-
-    public void executeRestart() {
-        isRestarting = false;
-        Bukkit.broadcastMessage(getMsg("messages.restart-now"));
-        
-        // Odeslání zprávy přes Discord Webhook při spuštění restartu
+        // Odeslání Discord webhooku při spuštění restartu
         sendDiscordWebhook();
 
-        String cmd = getConfig().getString("command", "restart");
+        String cmd = (customCommand != null && !customCommand.isEmpty()) 
+                ? customCommand 
+                : getConfig().getString("command", "restart");
+
         Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd);
     }
 
@@ -178,22 +160,58 @@ public class RestartSystem extends JavaPlugin {
                    .replace("\r", "\\r");
     }
 
-    public String getMsg(String path) {
+    private void playWarningSound() {
+        if (!getConfig().getBoolean("sound.enabled", true)) {
+            return;
+        }
+
+        String soundName = getConfig().getString("sound.sound-name", "ENTITY_EXPERIENCE_ORB_PICKUP");
+        float volume = (float) getConfig().getDouble("sound.volume", 1.0);
+        float pitch = (float) getConfig().getDouble("sound.pitch", 1.0);
+
+        try {
+            Sound sound = Sound.valueOf(soundName);
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                player.playSound(player.getLocation(), sound, volume, pitch);
+            }
+        } catch (IllegalArgumentException e) {
+            getLogger().warning("Invalid sound name in config: " + soundName);
+        }
+    }
+
+    private String getWarningMessageKey(int seconds) {
+        if (seconds >= 60) {
+            int minutes = seconds / 60;
+            return (minutes == 1) ? "time-warning-minute" : "time-warning-minutes";
+        } else {
+            return (seconds == 1) ? "time-warning-second" : "time-warning-seconds";
+        }
+    }
+
+    private String formatTime(int totalSeconds) {
+        if (totalSeconds >= 60) {
+            int minutes = totalSeconds / 60;
+            return minutes + getConfig().getString("time-format.minutes", "m");
+        } else {
+            return totalSeconds + getConfig().getString("time-format.seconds", "s");
+        }
+    }
+
+    public String color(String message) {
+        if (message == null) return "";
         String prefix = getConfig().getString("messages.prefix", "&e[System] &r");
-        String msg = getConfig().getString(path, "");
-        msg = msg.replace("%prefix%", prefix);
-        return ChatColor.translateAlternateColorCodes('&', msg);
+        return ChatColor.translateAlternateColorCodes('&', message.replace("%prefix%", prefix));
+    }
+
+    public boolean isRunning() {
+        return isRunning;
     }
 
     public int getTimeLeft() {
         return timeLeft;
     }
 
-    public void setTimeLeft(int seconds) {
-        this.timeLeft = seconds;
-    }
-
-    public boolean isRestarting() {
-        return isRestarting;
+    public void setTimeLeft(int timeLeft) {
+        this.timeLeft = timeLeft;
     }
 }

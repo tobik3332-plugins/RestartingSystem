@@ -1,159 +1,199 @@
 package cz.restartsystem;
 
-import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.Sound;
+import org.bukkit.command.PluginCommand;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 
-public final class RestartSystem extends JavaPlugin {
+public class RestartSystem extends JavaPlugin {
 
-    private static final Pattern HEX_PATTERN = Pattern.compile("&#([A-Fa-f0-9]{6})");
-    private BukkitTask mainTimerTask;
-    private int secondsRemaining = 0;
-    private Map<Integer, String> announcements = new HashMap<>();
+    private int timeLeft;
+    private BukkitTask timerTask;
+    private boolean isRestarting = false;
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
-        loadAnnouncements();
-
-        if (getCommand("restarting") != null) {
-            getCommand("restarting").setExecutor(new RestartCommand(this));
-            getCommand("restarting").setTabCompleter(new RestartTabCompleter(this));
+        
+        PluginCommand command = getCommand("restartsytem");
+        if (command != null) {
+            RestartCommand cmdHandler = new RestartCommand(this);
+            command.setExecutor(cmdHandler);
+            command.setTabCompleter(new RestartTabCompleter());
         }
 
-        getLogger().info("RestartSystem byl uspesne aktivovan!");
+        startRestartTimer();
+        getLogger().info("RestartingSystem by tobik3332 enabled!");
     }
 
     @Override
     public void onDisable() {
-        cancelRestart(false);
+        cancelRestartTimer();
+        getLogger().info("RestartingSystem disabled!");
     }
 
-    public void loadAnnouncements() {
-        announcements.clear();
-        List<String> rawAnnounce = getConfig().getStringList("announce");
-        for (String entry : rawAnnounce) {
-            String[] split = entry.split(",", 2);
-            if (split.length == 2) {
-                try {
-                    int sec = Integer.parseInt(split[0].trim());
-                    announcements.put(sec, split[1].trim());
-                } catch (NumberFormatException ignored) {}
+    public void startRestartTimer() {
+        cancelRestartTimer();
+        
+        timeLeft = getConfig().getInt("restart-time", 300);
+        isRestarting = true;
+
+        timerTask = new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (timeLeft <= 0) {
+                    executeRestart();
+                    cancel();
+                    return;
+                }
+
+                checkAndSendWarning(timeLeft);
+                timeLeft--;
             }
+        }.runTaskTimer(this, 0L, 20L);
+    }
+
+    public void cancelRestartTimer() {
+        if (timerTask != null && !timerTask.isCancelled()) {
+            timerTask.cancel();
         }
+        isRestarting = false;
+    }
+
+    private void checkAndSendWarning(int seconds) {
+        List<Integer> warnings = getConfig().getIntegerList("time-warnings");
+        if (warnings.contains(seconds)) {
+            String messageKey = getWarningMessageKey(seconds);
+            String formattedTime = formatTime(seconds);
+            String msg = getMsg(messageKey).replace("%time%", formattedTime);
+            
+            Bukkit.broadcastMessage(msg);
+            playSound();
+        }
+    }
+
+    private String getWarningMessageKey(int seconds) {
+        if (seconds >= 60) {
+            int minutes = seconds / 60;
+            return (minutes == 1) ? "messages.time-warning-minute" : "messages.time-warning-minutes";
+        } else {
+            return (seconds == 1) ? "messages.time-warning-second" : "messages.time-warning-seconds";
+        }
+    }
+
+    private String formatTime(int totalSeconds) {
+        if (totalSeconds >= 60) {
+            int minutes = totalSeconds / 60;
+            return minutes + getConfig().getString("time-format.minutes", "m");
+        } else {
+            return totalSeconds + getConfig().getString("time-format.seconds", "s");
+        }
+    }
+
+    private void playSound() {
+        if (!getConfig().getBoolean("sound.enabled", true)) return;
+
+        String soundName = getConfig().getString("sound.sound-name", "ENTITY_EXPERIENCE_ORB_PICKUP");
+        float volume = (float) getConfig().getDouble("sound.volume", 1.0);
+        float pitch = (float) getConfig().getDouble("sound.pitch", 1.0);
+
+        try {
+            Sound sound = Sound.valueOf(soundName);
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                player.playSound(player.getLocation(), sound, volume, pitch);
+            }
+        } catch (IllegalArgumentException e) {
+            getLogger().warning("Invalid sound name in config: " + soundName);
+        }
+    }
+
+    public void executeRestart() {
+        isRestarting = false;
+        Bukkit.broadcastMessage(getMsg("messages.restart-now"));
+        
+        // Odeslání zprávy přes Discord Webhook při spuštění restartu
+        sendDiscordWebhook();
+
+        String cmd = getConfig().getString("command", "restart");
+        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd);
+    }
+
+    private void sendDiscordWebhook() {
+        FileConfiguration config = getConfig();
+
+        if (!config.getBoolean("discord.enabled", false)) {
+            return;
+        }
+
+        String webhookUrl = config.getString("discord.webhook-url");
+        String messageContent = config.getString("discord.message", "Server se restartuje.");
+
+        if (webhookUrl == null || webhookUrl.isEmpty() || webhookUrl.contains("YOUR_DISCORD_WEBHOOK_URL_HERE")) {
+            return;
+        }
+
+        Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
+            try {
+                URL url = new URL(webhookUrl);
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("POST");
+                connection.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+                connection.setRequestProperty("User-Agent", "RestartingSystem-Plugin");
+                connection.setDoOutput(true);
+
+                String jsonPayload = "{\"content\": \"" + escapeJson(messageContent) + "\"}";
+
+                try (OutputStream os = connection.getOutputStream()) {
+                    byte[] input = jsonPayload.getBytes(StandardCharsets.UTF_8);
+                    os.write(input, 0, input.length);
+                }
+
+                int responseCode = connection.getResponseCode();
+                if (responseCode < 200 || responseCode >= 300) {
+                    getLogger().warning("Nepodařilo se odeslat Discord webhook. HTTP kód: " + responseCode);
+                }
+
+                connection.disconnect();
+            } catch (Exception e) {
+                getLogger().severe("Chyba při odesílání Discord webhooku: " + e.getMessage());
+            }
+        });
+    }
+
+    private String escapeJson(String text) {
+        return text.replace("\\", "\\\\")
+                   .replace("\"", "\\\"")
+                   .replace("\n", "\\n")
+                   .replace("\r", "\\r");
+    }
+
+    public String getMsg(String path) {
+        String prefix = getConfig().getString("messages.prefix", "&e[System] &r");
+        String msg = getConfig().getString(path, "");
+        msg = msg.replace("%prefix%", prefix);
+        return ChatColor.translateAlternateColorCodes('&', msg);
+    }
+
+    public int getTimeLeft() {
+        return timeLeft;
+    }
+
+    public void setTimeLeft(int seconds) {
+        this.timeLeft = seconds;
     }
 
     public boolean isRestarting() {
-        return mainTimerTask != null;
-    }
-
-    public void startRestart(int seconds, List<String> broadcastTemplate, String customReason) {
-        cancelRestart(false);
-        this.secondsRemaining = seconds;
-
-        sendFormattedBroadcast(broadcastTemplate, secondsRemaining, customReason);
-
-        mainTimerTask = Bukkit.getScheduler().runTaskTimer(this, () -> {
-            secondsRemaining--;
-
-            if (announcements.containsKey(secondsRemaining)) {
-                String msg = announcements.get(secondsRemaining);
-                Bukkit.broadcastMessage(color(msg));
-            }
-
-            if (secondsRemaining <= 0) {
-                executeServerRestart();
-            }
-        }, 20L, 20L);
-    }
-
-    public void cancelRestart(boolean broadcast) {
-        if (mainTimerTask != null) {
-            mainTimerTask.cancel();
-            mainTimerTask = null;
-            secondsRemaining = 0;
-
-            if (broadcast) {
-                List<String> cancelPrompt = getConfig().getStringList("prompt-cancel.prompt");
-                for (String line : cancelPrompt) {
-                    Bukkit.broadcastMessage(color(line));
-                }
-            }
-        }
-    }
-
-    private void executeServerRestart() {
-        cancelRestart(false);
-        String kickMsg = color(getConfig().getString("kick-message", "&cServer se restartuje!"));
-        
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            player.kickPlayer(kickMsg);
-        }
-
-        Bukkit.getScheduler().runTaskLater(this, () -> Bukkit.spigot().restart(), 10L);
-    }
-
-    public void sendFormattedBroadcast(List<String> template, int seconds, String customReason) {
-        String formattedTime = formatTime(seconds);
-        for (String line : template) {
-            String processed = line.replace("{time}", formattedTime);
-            if (customReason != null) {
-                processed = processed.replace("{reason}", customReason);
-            }
-            Bukkit.broadcastMessage(color(processed));
-        }
-    }
-
-    public String formatTime(int totalSeconds) {
-        int minutes = totalSeconds / 60;
-        int seconds = totalSeconds % 60;
-
-        String minText = "";
-        if (minutes > 0) {
-            if (minutes == 1) {
-                minText = getConfig().getString("time-formatting.minutes.one", "1 minuta");
-            } else if (minutes >= 2 && minutes <= 4) {
-                minText = getConfig().getString("time-formatting.minutes.few", "{count} minuty").replace("{count}", String.valueOf(minutes));
-            } else {
-                minText = getConfig().getString("time-formatting.minutes.many", "{count} minut").replace("{count}", String.valueOf(minutes));
-            }
-        }
-
-        String secText = "";
-        if (seconds > 0) {
-            if (seconds == 1) {
-                secText = getConfig().getString("time-formatting.seconds.one", "1 sekunda");
-            } else if (seconds >= 2 && seconds <= 4) {
-                secText = getConfig().getString("time-formatting.seconds.few", "{count} sekundy").replace("{count}", String.valueOf(seconds));
-            } else {
-                secText = getConfig().getString("time-formatting.seconds.many", "{count} sekund").replace("{count}", String.valueOf(seconds));
-            }
-        }
-
-        if (!minText.isEmpty() && !secText.isEmpty()) {
-            return minText + getConfig().getString("time-formatting.connector", " a ") + secText;
-        } else if (!minText.isEmpty()) {
-            return minText;
-        } else {
-            return secText.isEmpty() ? "0 sekund" : secText;
-        }
-    }
-
-    public String color(String message) {
-        if (message == null) return "";
-        Matcher matcher = HEX_PATTERN.matcher(message);
-        StringBuffer buffer = new StringBuffer();
-        while (matcher.find()) {
-            String color = matcher.group(1);
-            matcher.appendReplacement(buffer, ChatColor.of("#" + color).toString());
-        }
-        matcher.appendTail(buffer);
-        return ChatColor.translateAlternateColorCodes('&', buffer.toString());
+        return isRestarting;
     }
 }

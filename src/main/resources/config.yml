@@ -8,6 +8,12 @@
 # # restarting.cancel         - Oprávnění ke zrušení probíhajícího restartu (/restarting cancel)
 # ========================================================
 
+# Discord Webhook Integration
+discord:
+  enabled: true
+  webhook-url: "YOUR_DISCORD_WEBHOOK_URL_HERE"
+  message: "⚠️ **Server se právě začíná restartovat!**"
+  
 example-time:
   - "600"
   - "300"

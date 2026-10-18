@@ -39,9 +39,12 @@ jobs:
       - name: Build with Maven
         run: mvn clean package -Dproject.version=${{ env.FINAL_VERSION }}
 
-      - name: Rename JAR artifact
+      - name: Locate and Rename JAR artifact
         run: |
-          mv target/RestartingSystem-${{ env.FINAL_VERSION }}-SNAPSHOT.jar target/RestartingSystem-${{ env.FINAL_VERSION }}.jar
+          cd target
+          # Najde vygenerovaný JAR soubor a přejmenuje jej přesně podle vypočítané verze
+          ORIGINAL_JAR=$(ls RestartingSystem-*.jar | head -n 1)
+          mv "$ORIGINAL_JAR" "RestartingSystem-${{ env.FINAL_VERSION }}.jar"
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4

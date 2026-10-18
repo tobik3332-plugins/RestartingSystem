@@ -5,6 +5,12 @@ api-version: '1.20'
 author: MineDynasty
 description: Pokročilý systém pro správu a plánování restartu serveru.
 
+commands:
+  restarting:
+    description: Hlavní příkaz pro správa restartu serveru
+    usage: /restarting <cas|reload|cancel> [duvod|custom] [vlastni text]
+    permission: restarting.restart
+
 permissions:
   restarting.admin:
     description: Oprávnění k příkazu /restarting reload

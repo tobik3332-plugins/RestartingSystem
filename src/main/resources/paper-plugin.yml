@@ -1,0 +1,20 @@
+name: RestartingSystem
+version: '${project.version}'
+main: cz.minedynasty.restartingsystem.RestartingSystem
+api-version: '1.20'
+author: MineDynasty
+description: Pokročilý systém pro správu a plánování restartu serveru.
+
+permissions:
+  restarting.admin:
+    description: Oprávnění k příkazu /restarting reload
+    default: op
+  restarting.restart:
+    description: Oprávnění k zahájení restartu s přednastaveným důvodem
+    default: op
+  restarting.restart.custom:
+    description: Oprávnění k zahájení restartu s vlastním důvodem
+    default: op
+  restarting.cancel:
+    description: Oprávnění ke zrušení probíhajícího restartu
+    default: op

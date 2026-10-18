@@ -36,8 +36,11 @@ public class RestartManager {
         this.remainingSeconds = seconds;
         this.isRunning = true;
 
+        // Načtení oznámení z konfigurace
         loadAnnounceMap();
-        plugin.getDiscordWebhookManager().sendWebhookMessage();
+
+        // Prompt se pošle POUZE JEDNOU hned při spuštění příkazu
+        showPrompt(reasonType, customReasonText);
 
         task = new BukkitRunnable() {
             @Override
@@ -48,12 +51,12 @@ public class RestartManager {
                     return;
                 }
 
+                // Odeslání zprávy podle nastaveného času v announce
                 if (announceMap.containsKey(remainingSeconds)) {
                     String msg = announceMap.get(remainingSeconds);
                     Bukkit.broadcast(ColorUtils.color(msg));
                 }
 
-                showPrompt(reasonType, customReasonText);
                 remainingSeconds--;
             }
         }.runTaskTimer(plugin, 0L, 20L);
@@ -98,6 +101,9 @@ public class RestartManager {
     }
 
     private void executeRestart() {
+        // Discord Webhook se odesílá až po dokončení odpočtu
+        plugin.getDiscordWebhookManager().sendWebhookMessage();
+
         String kickMsgRaw = plugin.getConfigManager().getConfig().getString("kick-message", "Server se restartuje!");
         net.kyori.adventure.text.Component kickComponent = ColorUtils.color(kickMsgRaw);
 

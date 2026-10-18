@@ -1,7 +1,6 @@
 package cz.minedynasty.restartingsystem.managers;
 
 import cz.minedynasty.restartingsystem.RestartingSystem;
-import org.bukkit.Bukkit;
 
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -25,30 +24,33 @@ public class DiscordWebhookManager {
             return;
         }
 
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-            try {
-                URL url = new URL(webhookUrl);
-                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                connection.setRequestMethod("POST");
-                connection.setRequestProperty("Content-Type", "application/json");
-                connection.setRequestProperty("User-Agent", "Mozilla/5.0");
-                connection.setDoOutput(true);
+        // Při vypínání serveru odesíláme synchronně, aby server neukončil proces dříve, než zpráva odejde
+        try {
+            URL url = new URL(webhookUrl);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("POST");
+            connection.setRequestProperty("Content-Type", "application/json");
+            connection.setRequestProperty("User-Agent", "Mozilla/5.0");
+            connection.setConnectTimeout(5000); // 5 sekund timeout
+            connection.setReadTimeout(5000);
+            connection.setDoOutput(true);
 
-                String jsonPayload = "{\"content\": \"" + escapeJson(message) + "\"}";
+            String jsonPayload = "{\"content\": \"" + escapeJson(message) + "\"}";
 
-                try (OutputStream os = connection.getOutputStream()) {
-                    byte[] input = jsonPayload.getBytes(StandardCharsets.UTF_8);
-                    os.write(input, 0, input.length);
-                }
-
-                int responseCode = connection.getResponseCode();
-                if (responseCode < 200 || responseCode >= 300) {
-                    plugin.getLogger().warning("Discord webhook odeslán s chybovým kódem: " + responseCode);
-                }
-            } catch (Exception e) {
-                plugin.getLogger().warning("Nepodařilo se odeslat Discord Webhook: " + e.getMessage());
+            try (OutputStream os = connection.getOutputStream()) {
+                byte[] input = jsonPayload.getBytes(StandardCharsets.UTF_8);
+                os.write(input, 0, input.length);
             }
-        });
+
+            int responseCode = connection.getResponseCode();
+            if (responseCode < 200 || responseCode >= 300) {
+                plugin.getLogger().warning("Discord webhook odeslán s chybovým kódem: " + responseCode);
+            } else {
+                plugin.getLogger().info("Discord webhook byl úspěšně odeslán.");
+            }
+        } catch (Exception e) {
+            plugin.getLogger().warning("Nepodařilo se odeslat Discord Webhook: " + e.getMessage());
+        }
     }
 
     private String escapeJson(String input) {

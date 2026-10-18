@@ -1,0 +1,99 @@
+# ========================================================
+#            RestartSystem Configuration
+# ========================================================
+# Permise:
+# # restarting.admin          - Oprávnění k příkazu /restarting reload
+# # restarting.restart        - Oprávnění k zahájení restartu s přednastaveným důvodem
+# # restarting.restart.custom - Oprávnění k zahájení restartu s vlastním důvodem (custom)
+# # restarting.cancel         - Oprávnění ke zrušení probíhajícího restartu (/restarting cancel)
+# ========================================================
+
+# Discord Webhook Integration
+discord:
+  enabled: true
+  webhook-url: "https://discord.com/api/webhooks/1558541973688811764/UQtCWx7VooL4PwnePMu9GrnKKtaLZdA89xBZREJCL7j1Q_eaC1KE2brx8Q3xPDnSCNKE"
+  message: "# :gear: Server se restartuje!"
+
+example-time:
+  - "600"
+  - "300"
+  - "120"
+  - "60"
+
+# Formátování času pro proměnnou {time}
+time-formatting:
+  seconds:
+    one: "1 sekunda"
+    few: "{count} sekundy"
+    many: "{count} sekund"
+  minutes:
+    one: "1 minuta"
+    few: "{count} minuty"
+    many: "{count} minut"
+  hours:
+    one: "1 hodina"
+    few: "{count} hodiny"
+    many: "{count} hodin"
+  connector: " a "
+
+announce:
+  - "600, &8[&cRestart&8] &7Server se restartuje za &c10 minut&7!"
+  - "300, &8[&cRestart&8] &7Server se restartuje za &c5 minut&7!"
+  - "120, &8[&cRestart&8] &7Server se restartuje za &c2 minuty&7!"
+  - "60, &8[&cRestart&8] &7Server se restartuje za &c1 minutu&7!"
+  - "10, &8[&cRestart&8] &7Server se restartuje za &c10 sekund&7!"
+  - "5, &8[&cRestart&8] &7Server se restartuje za &c5 sekund&7!"
+  - "3, &8[&cRestart&8] &7Server se restartuje za &c3 sekundy&7!"
+  - "1, &8[&cRestart&8] &7Server se restartuje!"
+
+# Zprávy pro hráče
+messages:
+  reload-success: "&8[&cRestartSystem&8]&7 Konfigurace byla uspesne reloadovana."
+  no-permission: "&cNa toto nemáš právo."
+  usage: "&7Pouziti: &c/restarting <cas|reload|cancel> [duvod|custom] [vlastni text]"
+  invalid-time: "&cNeplatny cas! Musi byt zadano cislo v sekundach."
+  no-reason-provided: "&cMusis zadat duvod restartu!"
+  no-custom-text-provided: "&cMusis napsat text vlastniho duvodu!"
+  unknown-reason: "&cTento duvod v konfiguraci neexistuje!"
+  no-restart-running: "&8[&cRestartSystem&8]&7 Žádný restart není naplánován."
+
+kick-message: "§c⚠ §lMineDynasty§8 | §726.1.2 §c ⚠\n§r\n§7Omlouváme se za potíže zdá se,\n§7že server přešel do §c§nOffline§7 režimu!\n§7Server se pravděpodobně restartuje,\n§7pokud se do §f5 minut§7 nezapne kontaktujte\n§7nás na §9Discordu\n§r\n§8Děkujeme Vám za hraní na našem serveru!"
+
+prompt-cancel:
+  prompt:
+    - "&8-----------------------------------------------------"
+    - '                                &c&lʀᴇѕᴛᴀʀᴛɪɴɢ'
+    - "&r"
+    - "                     &cRestart serveru byl přerušen. "
+    - "&8-----------------------------------------------------"
+
+prompts:
+  obecne:
+    - '&8-----------------------------------------------------'
+    - '                            &c&lʀᴇѕᴛᴀʀᴛɪɴɢ &8| &7{time}'
+    - '&r'
+    - '    &cServer se restartuje, po chvíli se můžete opět připojit.'
+    - '&8-----------------------------------------------------'
+  plugins:
+    - '&8-----------------------------------------------------'
+    - '                            &c&lʀᴇѕᴛᴀʀᴛɪɴɢ &8| &7{time}'
+    - '&r'
+    - '        &cServer se restartuje, z důvodu údržby pluginu,'
+    - '                &cpo chvíli se můžete opět připojit.'
+    - '&8-----------------------------------------------------'
+  udrzba:
+    - '&8-----------------------------------------------------'
+    - '                            &c&lʀᴇѕᴛᴀʀᴛɪɴɢ &8| &7{time}'
+    - '&r'
+    - '        &cServer se restartuje, z důvodu údržby serveru,'
+    - '                &cpo chvíli se můžete opět připojit.'
+    - '&8-----------------------------------------------------'
+
+custom-prompts:
+  prompt:
+    - '&8-----------------------------------------------------'
+    - '                            &c&lʀᴇѕᴛᴀʀᴛɪɴɢ &8| &7{time}'
+    - '&r'
+    - '    &cServer se restartuje, po chvíli se můžete opět připojit.'
+    - '                &cDůvod: {reason}'
+    - '&8-----------------------------------------------------'

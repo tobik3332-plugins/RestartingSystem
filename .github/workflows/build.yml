@@ -11,10 +11,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
@@ -44,7 +44,7 @@ jobs:
           mv target/RestartingSystem-${{ env.FINAL_VERSION }}-SNAPSHOT.jar target/RestartingSystem-${{ env.FINAL_VERSION }}.jar
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: RestartingSystem-${{ env.FINAL_VERSION }}
           path: target/RestartingSystem-${{ env.FINAL_VERSION }}.jar

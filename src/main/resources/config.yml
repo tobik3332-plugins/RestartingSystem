@@ -10,8 +10,8 @@
 
 # Discord Webhook Integration
 discord:
-  enabled: true
-  webhook-url: "https://discord.com/api/webhooks/1558541973688811764/UQtCWx7VooL4PwnePMu9GrnKKtaLZdA89xBZREJCL7j1Q_eaC1KE2brx8Q3xPDnSCNKE"
+  enabled: false
+  webhook-url: "webhook-url"
   message: "# :gear: Server se restartuje!"
 
 example-time:
